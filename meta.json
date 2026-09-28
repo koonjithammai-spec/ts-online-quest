@@ -1,0 +1,14 @@
+{
+  "version": "0.3",
+  "talkRecords": 36748,
+  "eventFiles": 3923,
+  "eventsWithHighTalkReferences": 884,
+  "highTalkReferences": 2512,
+  "structuralQuestNodes": 0,
+  "generatedFrom": "Data.zip",
+  "notes": [
+    "High references use the recurring TalkID + 01 01 01 binary pattern.",
+    "Structural nodes use a stricter NPC/Count/Step-like byte pattern found inside event payloads.",
+    "Event filename is a Map/Event candidate, not automatically a Quest ID."
+  ]
+}
