@@ -35,10 +35,10 @@ function searchGameData() {
 
     let matches = [];
 
-    // ฟังก์ชันช่วยคัดกรองข้อมูล
-    const matchData = (dataObj, categoryName) => {
-        for (let key in dataObj) {
-            let item = dataObj[key];
+    // ฟังก์ชันค้นหาแยกตามหมวด
+    const searchInObj = (obj, categoryName) => {
+        for (let key in obj) {
+            let item = obj[key];
             let textStr = JSON.stringify(item).toLowerCase();
             if (keyword === '' || textStr.includes(keyword)) {
                 let name = item.name || item.Name || item.title || `ID: ${key}`;
@@ -46,14 +46,14 @@ function searchGameData() {
                 if (typeof desc === 'object') desc = JSON.stringify(desc);
                 
                 matches.push({ category: categoryName, id: key, name: name, desc: desc, raw: item });
-                if (matches.length >= 100) break; // ลิมิตผลลัพธ์เพื่อความลื่นไหล
+                if (matches.length >= 150) break;
             }
         }
     };
 
-    if (currentCategory === 'all' || currentCategory === 'item') matchData(itemData, 'ไอเทม');
-    if (currentCategory === 'all' || currentCategory === 'npc') matchData(npcData, 'NPC');
-    if ((currentCategory === 'all' || currentCategory === 'quest') && matches.length < 100) matchData(talksData, 'เควส/บทสนทนา');
+    if (currentCategory === 'all' || currentCategory === 'item') searchInObj(itemData, 'ไอเทม');
+    if (currentCategory === 'all' || currentCategory === 'npc') searchInObj(npcData, 'NPC');
+    if (currentCategory === 'all' || currentCategory === 'quest') searchInObj(talksData, 'เควส/บทสนทนา');
 
     countDiv.innerHTML = `ค้นพบข้อมูลที่เกี่ยวข้องทั้งหมด ${matches.length} รายการ`;
 
@@ -66,23 +66,22 @@ function searchGameData() {
         <table class="data-table">
             <thead>
                 <tr>
-                    <th width="15%">หมวดหมู่</th>
-                    <th width="20%">รหัส / ชื่อ</th>
-                    <th width="65%">รายละเอียดเบื้องต้น</th>
+                    <th width="18%">หมวดหมู่</th>
+                    <th width="25%">รหัส / ชื่อ</th>
+                    <th width="57%">รายละเอียดเบื้องต้น</th>
                 </tr>
             </thead>
             <tbody>
     `;
 
-    matches.forEach((m, index) => {
+    matches.forEach(m => {
         let shortDesc = m.desc.length > 85 ? m.desc.substring(0, 85) + '...' : m.desc;
         let badgeClass = m.category === 'ไอเทม' ? 'badge-item' : m.category === 'NPC' ? 'badge-npc' : 'badge-quest';
         
-        tableHTML++; // placeholder logic fix in mapping structure below
-        tableHTML = tableHTML.replace(/<\/tr>$/, ''); // clean up
-        
+        let safeJson = JSON.stringify(m.raw).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
         tableHTML += `
-            <tr onclick='showDetail(${JSON.stringify(m.raw).replace(/'/g, "&apos;")})'>
+            <tr onclick='showDetail(${safeJson})'>
                 <td><span class="badge ${badgeClass}">${m.category}</span></td>
                 <td><b>${m.name}</b> <span style="color:#64748b; font-size:0.8rem;">(#${m.id})</span></td>
                 <td>${shortDesc}</td>
