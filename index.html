@@ -3,20 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ฐานข้อมูล TS Online - ค้นหาเควสและไอเทม</title>
+    <title>TS Online Database - ค้นหาข้อมูลเกม</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>⚔️ ฐานข้อมูลค้นหาเควส TS Online ⚔️</h1>
-        <div class="search-box">
-            <input type="text" id="searchInput" placeholder="พิมพ์ชื่อไอเทม, NPC หรือเนื้อหาเควสที่ต้องการค้นหา..." onkeyup="searchGameData()">
+        <header>
+            <h1>⚔️ TS Online Ultimate Database ⚔️</h1>
+            <p>ระบบค้นหาข้อมูลเควส ไอเทม และ NPC อย่างรวดเร็ว</p>
+        </header>
+
+        <!-- แถบเลือกหมวดหมู่ -->
+        <div class="filter-tabs">
+            <button class="tab-btn active" onclick="setCategory('all', event)">ทั้งหมด</button>
+            <button class="tab-btn" onclick="setCategory('quest', event)">เควส/บทสนทนา</button>
+            <button class="tab-btn" onclick="setCategory('item', event)">ไอเทม</button>
+            <button class="tab-btn" onclick="setCategory('npc', event)">NPC</button>
         </div>
+
+        <!-- ช่องค้นหา -->
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="พิมพ์ชื่อไอเทม, เควส หรือ NPC ที่ต้องการค้นหา..." onkeyup="searchGameData()">
+        </div>
+
         <div id="resultCount"></div>
+        
+        <!-- พื้นที่แสดงผลตาราง -->
         <div id="results">
-            <p style="text-align: center; color: #64748b;">พิมพ์คำค้นหาเพื่อเริ่มใช้งาน...</p>
+            <div class="welcome-msg">พิมพ์คำค้นหาด้านบน หรือเลือกหมวดหมู่เพื่อเริ่มใช้งาน</div>
         </div>
     </div>
+
+    <!-- Modal สำหรับดูรายละเอียดเชิงลึก -->
+    <div id="detailModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <h2>รายละเอียดข้อมูล</h2>
+            <pre id="modalBody"></pre>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
