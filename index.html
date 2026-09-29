@@ -3,71 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TS Online Elite Quest Codex - สารานุกรมเควสขั้นเทพ</title>
+    <title>สารานุกรมเควส - TS Arena</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Google Fonts สำหรับฟอนต์เกมมิ่งทันสมัย -->
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="app-layout">
-        <!-- Sidebar ด้านซ้ายสำหรับเลือกหมวด / กรองข้อมูล -->
-        <aside class="sidebar">
-            <div class="logo-area">
-                <h2>⚔️ TS CODEX</h2>
-                <span>Ultimate Quest Database</span>
+    <!-- แถบหัวเว็บด้านบน -->
+    <header class="top-navbar">
+        <div class="nav-title">
+            <h2>📖 สารานุกรมเควส</h2>
+            <span>TS Arena · ข้อมูลจาก Client</span>
+        </div>
+        <div class="nav-stats" id="totalStatsCounter">กำลังโหลด...</div>
+    </header>
+
+    <!-- เลย์เอาต์หลักแบ่งซ้าย-ขวา -->
+    <div class="main-container">
+        <!-- คอลัมน์ซ้าย: ช่องค้นหา ตัวกรอง และรายชื่อเควส -->
+        <aside class="left-sidebar">
+            <div class="tabs-switch">
+                <button class="tab-btn active">เควส</button>
+                <button class="tab-btn inactive" onclick="alert('กำลังพัฒนาส่วน NPC ที่สู้')">NPC ที่สู้</button>
             </div>
-            <nav class="nav-menu">
-                <button class="nav-btn active" onclick="filterCategory('all', event)">📜 เควสเนื้อเรื่องทั้งหมด</button>
-                <button class="nav-btn" onclick="filterCategory('fight', event)">⚔️ เฉพาะเควสต่อสู้ (Boss)</button>
-            </nav>
-            <div class="sidebar-footer">
-                <p>ฐานข้อมูล Client อัปเดตล่าสุด</p>
+
+            <div class="search-box-area">
+                <input type="text" id="searchInput" placeholder="พิมพ์ชื่อเควส หรือรหัส..." onkeyup="filterAndSearchQuests()">
+            </div>
+
+            <!-- ฟิลเตอร์กรองขั้นสูง -->
+            <div class="filter-box">
+                <div class="filter-row">
+                    <label>จำนวนขั้นตอน</label>
+                    <input type="number" id="minSteps" placeholder="ต่ำสุด" oninput="filterAndSearchQuests()">
+                    <span>-</span>
+                    <input type="number" id="maxSteps" placeholder="สูงสุด" oninput="filterAndSearchQuests()">
+                </div>
+                <div class="filter-row">
+                    <label>จำนวนสู้ต่อไฟต์</label>
+                    <input type="number" id="minFights" placeholder="ต่ำสุด" oninput="filterAndSearchQuests()">
+                    <span>-</span>
+                    <input type="number" id="maxFights" placeholder="สูงสุด" oninput="filterAndSearchQuests()">
+                </div>
+            </div>
+
+            <div class="results-count" id="resultCountText">แสดงทั้งหมด 0 ผลลัพธ์</div>
+
+            <!-- รายการรายชื่อเควสฝั่งซ้าย -->
+            <div class="quest-sidebar-list" id="sidebarQuestList">
+                <!-- รายการจะถูกเติมด้วย JavaScript -->
             </div>
         </aside>
 
-        <!-- พื้นที่เนื้อหาหลักด้านขวา -->
-        <main class="main-content">
-            <header class="top-header">
-                <div class="search-box">
-                    <input type="text" id="searchInput" placeholder="ค้นหาชื่อเควส, ไอดี, มอนสเตอร์ หรือเนื้อหาขั้นตอน..." onkeyup="searchQuests()">
-                </div>
-                <div class="user-badge"><span>🌐 Online Database</span></div>
-            </header>
-
-            <div class="content-body">
-                <div class="stats-bar" id="statsInfo">กำลังโหลดข้อมูลระบบ...</div>
-                
-                <!-- ตารางแสดงผลสไตล์ Modern Table ผสมการ์ด -->
-                <div class="table-card-wrapper">
-                    <table class="modern-table">
-                        <thead>
-                            <tr>
-                                <th width="12%">รหัส ID</th>
-                                <th width="28%">ชื่อเควส / ภารกิจ</th>
-                                <th width="45%">ขั้นตอนสำคัญ / จุดปะทะ</th>
-                                <th width="15%">สถานะ</th>
-                            </tr>
-                        </thead>
-                        <tbody id="questTableBody">
-                            <!-- ข้อมูลสอดแทรกด้วย JS -->
-                        </tbody>
-                    </table>
-                </div>
+        <!-- คอลัมน์ขวา: พื้นที่แสดงรายละเอียดเควสที่เลือก (Timeline) -->
+        <main class="right-content" id="rightDetailArea">
+            <div class="welcome-pane">
+                <h2>👈 กรุณาเลือกเควสจากรายการด้านซ้าย</h2>
+                <p>เพื่อดูขั้นตอนการเดินเควส รายละเอียดแผนที่ และจุดปะทะทั้งหมด</p>
             </div>
         </main>
-    </div>
-
-    <!-- Modal Popup สำหรับดูรายละเอียดสเต็ปการเดินเควสแบบละเอียดยิบ -->
-    <div id="questModal" class="modal-backdrop" style="display:none;">
-        <div class="modal-container">
-            <div class="modal-header">
-                <h3 id="modalQuestTitle">รายละเอียดเควส</h3>
-                <button class="close-x" onclick="closeModal()">&times;</button>
-            </div>
-            <div class="modal-body" id="modalQuestBody">
-                <!-- รายละเอียดสเต็ปย่อย -->
-            </div>
-        </div>
     </div>
 
     <script src="script.js"></script>

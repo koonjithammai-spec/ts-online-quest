@@ -1,121 +1,102 @@
 let allQuests = [];
-let currentFilter = 'all';
 
-// โหลดไฟล์ quests.json ที่คอมไพล์เสร็จแล้ว
+// โหลดข้อมูลเควส
 fetch('quests.json')
     .then(res => res.json())
     .then(data => {
         allQuests = data;
-        updateStats(allQuests.length);
-        renderTable(allQuests);
+        document.getElementById('totalStatsCounter').innerText = `${allQuests.length} เควส`;
+        renderSidebarList(allQuests);
     })
     .catch(err => {
-        document.getElementById('statsInfo').innerHTML = '⚠️ ไม่พบไฟล์ quests.json กรุณารัน python compiler.py ก่อนครับ';
+        console.error("โหลดข้อมูลไม่สำเร็จ:", err);
     });
 
-// แสดงผลข้อมูลลงในตารางหลัก
-function renderTable(data) {
-    let tbody = document.getElementById('questTableBody');
-    tbody.innerHTML = '';
+// แสดงรายชื่อทางฝั่งซ้าย
+function renderSidebarList(data) {
+    let listContainer = document.getElementById('sidebarQuestList');
+    listContainer.innerHTML = '';
+    
+    document.getElementById('resultCountText').innerText = `แสดงทั้งหมด ${data.length} ผลลัพธ์`;
 
-    if (!data || data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 40px; color: #64748b;">ไม่พบข้อมูลเควสที่คุณค้นหา</td></tr>`;
+    if (data.length === 0) {
+        listContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: #94a3b8; font-size: 0.85rem;">ไม่พบเควสที่ตรงกัน</div>`;
         return;
     }
 
     let html = '';
-    // แสดงผลไม่เกิน 150 รายการแรกเพื่อความลื่นไหล
-    data.slice(0, 150).forEach(q => {
-        let firstStep = q.steps && q.steps.length > 0 ? q.steps[0] : { action: 'ไม่มีรายละเอียด', map: 'ไม่ระบุ' };
-        let hasFight = q.steps.some(s => s.type && s.type.includes('ต่อสู้'));
-        let statusBadge = hasFight ? `<span class="badge-fight">⚔️ มีต่อสู้ (Boss)</span>` : `<span class="badge-status">✔ เควสทั่วไป</span>`;
-
+    data.forEach((q, index) => {
+        let stepCount = q.steps ? q.steps.length : 0;
         html += `
-            <tr onclick='openQuestModal(${JSON.stringify(q).replace(/'/g, "&#39;")})'>
-                <td><span class="badge-id">#${q.quest_id}</span></td>
-                <td><b>${q.title}</b></td>
-                <td><span style="color: #38bdf8;">📍 แผนที่: ${firstStep.map}</span><br>${firstStep.action.substring(0, 50)}...</td>
-                <td>${statusBadge}</td>
-            </tr>
+            <div class="sidebar-item" id="q-card-${q.quest_id}" onclick="selectQuest(${q.quest_id})">
+                <h4>${q.title}</h4>
+                <span>Quest ${q.quest_id} · ${stepCount} ขั้นตอน</span>
+            </div>
         `;
     });
-
-    tbody.innerHTML = html;
+    listContainer.innerHTML = html;
 }
 
-// ฟังก์ชันเลือกหมวดหมู่เมนูด้านซ้าย
-function filterCategory(type, event) {
-    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-    if(event) event.target.classList.add('active');
-    currentFilter = type;
+// เมื่อคลิกเลือกเควสทางซ้าย ให้แสดงรายละเอียดไทม์ไลน์ทางขวา
+function selectQuest(id) {
+    // เอาไฮไลท์เก่าออก แล้วใส่ไฮไลท์ใหม่
+    document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('selected'));
+    let selectedEl = document.getElementById(`q-card-${id}`);
+    if (selectedEl) selectedEl.classList.add('selected');
 
-    applyFilterAndSearch();
-}
+    let q = allQuests.find(item => item.quest_id === id);
+    if (!q) return;
 
-// ฟังก์ชันค้นหาแบบเรียลไทม์
-function searchQuests() {
-    applyFilterAndSearch();
-}
-
-// ระบบกรองข้อมูลและค้นหาทำงานร่วมกัน
-function applyFilterAndSearch() {
-    let keyword = document.getElementById('searchInput').value.trim().toLowerCase();
-    
-    let baseData = allQuests;
-    if (currentFilter === 'fight') {
-        baseData = allQuests.filter(q => q.steps.some(s => s.type && s.type.includes('ต่อสู้')));
-    }
-
-    let filtered = baseData.filter(q => {
-        let matchTitle = q.title.toLowerCase().includes(keyword);
-        let matchId = String(q.quest_id).includes(keyword);
-        let matchStep = q.steps.some(s => s.action.toLowerCase().includes(keyword) || s.map.toLowerCase().includes(keyword));
-        return matchTitle || matchId || matchStep;
-    });
-
-    updateStats(filtered.length);
-    renderTable(filtered);
-}
-
-// อัปเดตข้อความสถิติ
-function updateStats(count) {
-    document.getElementById('statsInfo').innerHTML = `📊 แสดงผลข้อมูลเควสทั้งหมด <b>${count}</b> รายการ`;
-}
-
-// เปิดหน้าต่าง Modal ดูรายละเอียดสเต็ปเควสเชิงลึก
-function openQuestModal(q) {
-    document.getElementById('modalQuestTitle').innerText = `${q.title} (ID: ${q.quest_id})`;
-    
-    let stepsHtml = `<div style="margin-bottom: 15px; color: #38bdf8; font-size: 0.9rem;"><b>📌 เงื่อนไขเริ่มต้น:</b> ${q.prerequisite}</div>`;
-    
+    let stepsHtml = '';
     if (q.steps && q.steps.length > 0) {
         q.steps.forEach(s => {
             stepsHtml += `
-                <div class="step-box">
-                    <h4>ขั้นตอนที่ ${s.step_no} [ ${s.type} ]</h4>
-                    <p style="margin-bottom: 4px;">👤 <b>เป้าหมาย/ตัวละคร:</b> ${s.target}</p>
-                    <p style="margin-bottom: 6px;">💬 <b>บทพูด/เนื้อหา:</b> ${s.action}</p>
-                    <p style="font-size: 0.85rem; color: #38bdf8;">🗺️ <b>แผนที่:</b> ${s.map}</p>
+                <div class="timeline-step-card">
+                    <div class="step-number-circle">${s.step_no}</div>
+                    <div class="step-body-content">
+                        <h4>${s.type}</h4>
+                        <p>${s.action}</p>
+                        <span class="step-map-badge">📍 Map: ${s.map}</span>
+                    </div>
                 </div>
             `;
         });
     } else {
-        stepsHtml += `<p>ไม่มีขั้นตอนย่อยระบุไว้</p>`;
+        stepsHtml = `<p style="color: #64748b; font-size: 0.9rem;">ไม่มีข้อมูลขั้นตอนย่อย</p>`;
     }
 
-    document.getElementById('modalQuestBody').innerHTML = stepsHtml;
-    document.getElementById('questModal').style.display = 'flex';
+    let rightArea = document.getElementById('rightDetailArea');
+    rightArea.innerHTML = `
+        <div class="detail-header">
+            <div class="detail-meta-id">QUEST ID: ${q.quest_id}</div>
+            <h1>${q.title}</h1>
+            <div class="detail-sub-info">คะแนนตรวจ 100/100 · ${q.steps ? q.steps.length : 0} ขั้นตอน</div>
+        </div>
+
+        <div class="prereq-box">
+            <b>📌 เงื่อนไขและขอบเขตข้อมูล:</b> ${q.prerequisite}
+        </div>
+
+        <div class="timeline-title">ลำดับการเดินเควส</div>
+        <div class="timeline-container">
+            ${stepsHtml}
+        </div>
+    `;
 }
 
-// ปิดหน้าต่าง Modal
-function closeModal() {
-    document.getElementById('questModal').style.display = 'none';
-}
+// ระบบค้นหาและกรองข้อมูลขั้นสูง
+function filterAndSearchQuests() {
+    let keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+    let minStep = parseInt(document.getElementById('minSteps').value) || 0;
+    let maxStep = parseInt(document.getElementById('maxSteps').value) || 999;
 
-// ปิด Modal เมื่อคลิกพื้นที่ว่างด้านนอก
-window.onclick = function(event) {
-    let modal = document.getElementById('questModal');
-    if (event.target == modal) {
-        modal.style.display = 'none';
-    }
+    let filtered = allQuests.filter(q => {
+        let matchText = q.title.toLowerCase().includes(keyword) || String(q.quest_id).includes(keyword);
+        let stepCount = q.steps ? q.steps.length : 0;
+        let matchStepsCount = stepCount >= minStep && stepCount <= maxStep;
+
+        return matchText && matchStepsCount;
+    });
+
+    renderSidebarList(filtered);
 }
