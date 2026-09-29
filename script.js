@@ -9,22 +9,22 @@ fetch('quests.json')
         renderTable(allQuests);
     })
     .catch(err => {
-        document.getElementById('statsInfo').innerHTML = '⚠️ ยังไม่พบไฟล์ quests.json กรุณารัน python compiler.py ก่อนครับ';
+        document.getElementById('statsInfo').innerHTML = '⚠️ ไม่พบไฟล์ quests.json กรุณารัน python compiler.py ก่อนครับ';
     });
 
 function renderTable(data) {
     let tbody = document.getElementById('questTableBody');
     tbody.innerHTML = '';
 
-    if (data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 40px; color: #64748b;">ไม่พบข้อมูลเควสที่คุณต้องการ</td></tr>`;
+    if (!data || data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 40px; color: #64748b;">ไม่พบข้อมูลเควสที่คุณค้นหา</td></tr>`;
         return;
     }
 
     let html = '';
-    data.slice(0, 100).forEach(q => {
-        // หาตัวอย่างสเต็ปแรกมาแสดงย่อ
-        let firstStep = q.steps && q.steps.length > 0 ? q.steps[0].action : 'ไม่มีรายละเอียด';
+    // แสดงผลไม่เกิน 150 รายการเพื่อความเร็วในการเรนเดอร์หน้าเว็บ
+    data.slice(0, 150).forEach(q => {
+        let firstStep = q.steps && q.steps.length > 0 ? q.steps[0] : { action: 'ไม่มีรายละเอียด', map: 'ไม่ระบุ' };
         let hasFight = q.steps.some(s => s.type && s.type.includes('ต่อสู้'));
         let statusBadge = hasFight ? `<span class="badge-fight">⚔️ มีต่อสู้ (Boss)</span>` : `<span class="badge-status">✔ เควสทั่วไป</span>`;
 
@@ -32,7 +32,7 @@ function renderTable(data) {
             <tr onclick='openQuestModal(${JSON.stringify(q).replace(/'/g, "&#39;")})'>
                 <td><span class="badge-id">#${q.quest_id}</span></td>
                 <td><b>${q.title}</b></td>
-                <td><span style="color: #94a3b8;">📍 แผนที่: ${q.steps[0]?.map || 'ทั่วไป'}</span><br>${firstStep.substring(0, 60)}...</td>
+                <td><span style="color: #38bdf8;">📍 แผนที่: ${firstStep.map}</span><br>${firstStep.action.substring(0, 50)}...</td>
                 <td>${statusBadge}</td>
             </tr>
         `;
@@ -46,19 +46,20 @@ function filterCategory(type, event) {
     if(event) event.target.classList.add('active');
     currentFilter = type;
 
-    if (type === 'fight') {
-        let filtered = allQuests.filter(q => q.steps.some(s => s.type && s.type.includes('ต่อสู้')));
-        updateStats(filtered.length);
-        renderTable(filtered);
-    } else {
-        updateStats(allQuests.length);
-        renderTable(allQuests);
-    }
+    applyFilterAndSearch();
 }
 
 function searchQuests() {
+    applyFilterAndSearch();
+}
+
+function applyFilterAndSearch() {
     let keyword = document.getElementById('searchInput').value.trim().toLowerCase();
-    let baseData = currentFilter === 'fight' ? allQuests.filter(q => q.steps.some(s => s.type && s.type.includes('ต่อสู้'))) : allQuests;
+    
+    let baseData = allQuests;
+    if (currentFilter === 'fight') {
+        baseData = allQuests.filter(q => q.steps.some(s => s.type && s.type.includes('ต่อสู้')));
+    }
 
     let filtered = baseData.filter(q => {
         let matchTitle = q.title.toLowerCase().includes(keyword);
@@ -72,7 +73,7 @@ function searchQuests() {
 }
 
 function updateStats(count) {
-    document.getElementById('statsInfo').innerHTML = `📊 แสดงผลข้อมูลเควสทั้งหมด <b>${count}</b> รายการ (ระบบค้นหาเรียลไทม์)`;
+    document.getElementById('statsInfo').innerHTML = `📊 แสดงผลข้อมูลเควสทั้งหมด <b>${count}</b> รายการ`;
 }
 
 function openQuestModal(q) {
@@ -85,8 +86,8 @@ function openQuestModal(q) {
             stepsHtml += `
                 <div class="step-box">
                     <h4>ขั้นตอนที่ ${s.step_no} [ ${s.type} ]</h4>
-                    <p style="margin-bottom: 6px;">💬 <b>เนื้อหา/บทพูด:</b> ${s.action}</p>
-                    <p style="font-size: 0.85rem; color: #38bdf8;">🗺️ <b>พิกัดแผนที่:</b> ${s.map}</p>
+                    <p style="margin-bottom: 6px;">💬 <b>บทพูด/เนื้อหา:</b> ${s.action}</p>
+                    <p style="font-size: 0.85rem; color: #38bdf8;">🗺️ <b>แผนที่:</b> ${s.map}</p>
                 </div>
             `;
         });
