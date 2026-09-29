@@ -3,50 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TS Online Encyclopedia - สารานุกรมเกม</title>
+    <title>TS Online Quest Encyclopedia - สารานุกรมเควส</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="site-container">
         <!-- แถบหัวเว็บ -->
         <header class="site-header">
-            <h1>⚔️ TS Online Encyclopedia ⚔️</h1>
-            <p>ระบบฐานข้อมูลและสารานุกรมเจาะลึก ข้อมูลจาก Client เกม</p>
+            <h1>📜 TS Online Quest Encyclopedia 📜</h1>
+            <p>ระบบฐานข้อมูลขั้นตอนและเส้นทางเดินเควสเชิงลึก</p>
         </header>
 
-        <!-- แถบเลือกหมวดหมู่ข้อมูล -->
-        <div class="category-tabs">
-            <button class="tab-btn active" onclick="switchTab('talk', event)">💬 บทสนทนา/เควส</button>
-            <button class="tab-btn" onclick="switchTab('item', event)">🛡️ ไอเทม</button>
-            <button class="tab-btn" onclick="switchTab('npc', event)">👥 NPC</button>
-            <button class="tab-btn" onclick="switchTab('scene', event)">🗺️ แผนที่/ฉาก</button>
-        </div>
-
-        <!-- ช่องค้นหาหลัก -->
+        <!-- ช่องค้นหาเควส -->
         <div class="search-section">
-            <input type="text" id="searchInput" placeholder="พิมพ์ชื่อไอเทม, NPC, สถานที่ หรือเนื้อหาเควสที่ต้องการค้นหา..." onkeyup="filterData()">
+            <input type="text" id="searchInput" placeholder="พิมพ์ชื่อเควส, รหัส ID หรือเนื้อหาขั้นตอนเพื่อค้นหา..." onkeyup="searchQuests()">
         </div>
 
-        <div id="statsInfo" class="stats-info">กำลังโหลดข้อมูลฐานข้อมูล...</div>
+        <div id="statsInfo" class="stats-info">กำลังโหลดข้อมูลเควส...</div>
 
-        <!-- พื้นที่แสดงตารางผลลัพธ์ -->
-        <div class="table-container">
-            <table class="encyclopedia-table">
-                <thead id="tableHeader">
-                    <!-- หัวตารางจะเปลี่ยนไปตามหมวดหมู่ -->
-                </thead>
-                <tbody id="tableBody">
-                    <!-- ข้อมูลจะถูกเติมด้วย JavaScript -->
-                </tbody>
-            </table>
+        <!-- พื้นที่แสดงผลรายการเควส -->
+        <div id="questList" class="quest-list-container">
+            <!-- ข้อมูลเควสจะแสดงที่นี่ -->
         </div>
     </div>
 
-    <!-- Modal สำหรับดูรายละเอียดเชิงลึก -->
+    <!-- Modal สำหรับแสดงขั้นตอนเควสแบบละเอียด -->
     <div id="detailModal" class="modal-overlay" style="display:none;">
         <div class="modal-box">
             <span class="close-btn" onclick="closeModal()">&times;</span>
-            <h2 id="modalTitle">รายละเอียดข้อมูล</h2>
+            <h2 id="modalTitle">รายละเอียดเควส</h2>
             <div id="modalContent" class="modal-body-content"></div>
         </div>
     </div>

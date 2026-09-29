@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ฐานข้อมูล TS Online - ค้นหาเควสและไอเทม</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>⚔️ ฐานข้อมูลค้นหาเควส TS Online ⚔️</h1>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="พิมพ์ชื่อไอเทม, NPC หรือเนื้อหาเควสที่ต้องการค้นหา..." onkeyup="searchGameData()">
+        </div>
+        <div id="resultCount"></div>
+        <div id="results">
+            <p style="text-align: center; color: #64748b;">พิมพ์คำค้นหาเพื่อเริ่มใช้งาน...</p>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

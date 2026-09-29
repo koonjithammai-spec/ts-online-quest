@@ -1,120 +1,87 @@
-let dbData = {
-    talk: {},
-    item: {},
-    npc: {},
-    scene: {}
-};
-let currentTab = 'talk';
+let questsData = [];
 
-// โหลดฐานข้อมูลทั้งหมดพร้อมกัน
-Promise.all([
-    fetch('talks.json').then(res => res.json()).catch(() => ({})),
-    fetch('item.json').then(res => res.json()).catch(() => ({})),
-    fetch('npc.json').then(res => res.json()).catch(() => ({})),
-    fetch('scene.json').then(res => res.json()).catch(() => ({}))
-]).then(([talks, items, npcs, scenes]) => {
-    dbData.talk = talks;
-    dbData.item = items;
-    dbData.npc = npcs;
-    dbData.scene = scenes;
-    
-    updateStats();
-    renderTable();
-    console.log("โหลดฐานข้อมูลทั้งหมดเรียบร้อย!");
-});
+// โหลดไฟล์ quests.json ที่คอมไพล์มาแล้ว
+fetch('quests.json')
+    .then(res => res.json())
+    .then(data => {
+        questsData = data;
+        document.getElementById('statsInfoinnerText') || (document.getElementById('statsInfo').innerHTML = `โหลดข้อมูลเควสสำเร็จทั้งหมด ${questsData.length} รายการ`);
+        renderQuests(questsData);
+    })
+    .catch(err => {
+        console.error("โหลดไฟล์ quests.json ไม่สำเร็จ:", err);
+        document.getElementById('statsInfo').innerHTML = 'ไม่พบไฟล์ quests.json กรุณารัน compiler.py ก่อน';
+    });
 
-function switchTab(tabName, event) {
-    currentTab = tabName;
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    if(event) event.target.classList.add('active');
-    document.getElementById('searchInput').value = '';
-    renderTable();
-}
+function renderQuests(data) {
+    let container = document.getElementById('questList');
+    container.innerHTML = '';
 
-function updateStats() {
-    let counts = {
-        talk: Object.keys(dbData.talk).length,
-        item: Object.keys(dbData.item).length,
-        npc: Object.keys(dbData.npc).length,
-        scene: Object.keys(dbData.scene).length
-    };
-    document.getElementById('statsInfo').innerHTML = `สถานะฐานข้อมูล: บทสนทนา ${counts.talk} รายการ | ไอเทม ${counts.item} รายการ | NPC ${counts.npc} รายการ | ฉาก ${counts.scene} รายการ`;
-}
-
-function renderTable() {
-    let keyword = document.getElementById('searchInput').value.trim().toLowerCase();
-    let headerEl = document.getElementById('tableHeader');
-    let bodyEl = document.getElementById('tableBody');
-    
-    bodyEl.innerHTML = '';
-    let dataset = dbData[currentTab];
-    let rowsHTML = '';
-    let count = 0;
-
-    // กำหนดหัวตารางตามแท็บ
-    if (currentTab === 'talk') {
-        headerEl.innerHTML = `<tr><th width="20%">ID / รหัส</th><th width="80%">เนื้อหาบทสนทนา / เควส</th></tr>`;
-    } else if (currentTab === 'item') {
-        headerEl.innerHTML = `<tr><th width="20%">ID / รหัส</th><th width="30%">ชื่อไอเทม</th><th width="50%">รายละเอียด</th></tr>`;
-    } else if (currentTab === 'npc') {
-        headerEl.innerHTML = `<tr><th width="20%">ID / รหัส</th><th width="30%">ชื่อ NPC</th><th width="50%">ข้อมูลเพิ่มเติม</th></tr>`;
-    } else if (currentTab === 'scene') {
-        headerEl.innerHTML = `<tr><th width="30%">รหัสฉาก / พิกัด</th><th width="70%">ชื่อสถานที่</th></tr>`;
+    if (data.length === 0) {
+        container.innerHTML = '<div class="no-result">ไม่พบเควสที่คุณค้นหา</div>';
+        return;
     }
 
-    for (let key in dataset) {
-        let item = dataset[key];
-        let textSearchStr = JSON.stringify(item).toLowerCase() + " " + key.toLowerCase();
-
-        if (keyword === '' || textSearchStr.includes(keyword)) {
-            count++;
-            if (currentTab === 'talk') {
-                let text = item.text || item.Description || JSON.stringify(item);
-                rowsHTML += `<tr onclick='showModal("บทสนทนา ID: ${key}", ${JSON.stringify(item)})'>
-                    <td><b>#${key}</b></td>
-                    <td>${text}</td>
-                </tr>`;
-            } else if (currentTab === 'item') {
-                let name = item.name || item.Name || `Item #${key}`;
-                let desc = item.desc || item.Description || 'ไม่มีข้อมูล';
-                rowsHTML += `<tr onclick='showModal("${name}", ${JSON.stringify(item)})'>
-                    <td><b>#${key}</b></td>
-                    <td><b>${name}</b></td>
-                    <td>${desc}</td>
-                </tr>`;
-            } else if (currentTab === 'npc') {
-                let name = item.name || item.Name || `NPC #${key}`;
-                let desc = item.desc || item.Description || 'ไม่มีข้อมูล';
-                rowsHTML += `<tr onclick='showModal("${name}", ${JSON.stringify(item)})'>
-                    <td><b>#${key}</b></td>
-                    <td><b>${name}</b></td>
-                    <td>${desc}</td>
-                </tr>`;
-            } else if (currentTab === 'scene') {
-                rowsHTML += `<tr onclick='showModal("สถานที่: ${item}", {key: "${key}", value: "${item}"})'>
-                    <td><b>${key}</b></td>
-                    <td><b>${item}</b></td>
-                </tr>`;
-            }
-
-            if (count >= 150) break; // จำกัดการแสดงผลเพื่อความลื่นไหล
+    let html = '';
+    // แสดงผลทีละ 50 รายการแรกก่อนเพื่อความลื่นไหล
+    data.slice(0, 50).forEach(q => {
+        let stepsHtml = '';
+        if (q.steps && q.steps.length > 0) {
+            q.steps.forEach(s => {
+                stepsHtml += `<li class="quest-step-item"><b>ขั้นที่ ${s.step_no}:</b> ${s.action}</li>`;
+            });
         }
+
+        html += `
+            <div class="quest-card" onclick='showQuestDetail(${JSON.stringify(q).replace(/'/g, "&#39;")})'>
+                <div class="quest-card-header">
+                    <span class="badge-quest-id">ID: ${q.quest_id}</span>
+                    <h3>${q.title}</h3>
+                </div>
+                <div class="quest-card-body">
+                    <p><b>เงื่อนไข:</b> ${q.prerequisite}</p>
+                    <ul class="quest-steps-preview">
+                        ${stepsHtml}
+                    </ul>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function searchQuests() {
+    let keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+    if (keyword === '') {
+        renderQuests(questsData);
+        return;
     }
 
-    if (count === 0) {
-        bodyEl.innerHTML = `<tr><td colspan="3" style="text-align:center; padding: 30px; color: #8b949e;">ไม่พบข้อมูลที่คุณค้นหา</td></tr>`;
+    let filtered = questsData.filter(q => {
+        let titleMatch = q.title.toLowerCase().includes(keyword);
+        let idMatch = String(q.quest_id).includes(keyword);
+        let stepMatch = q.steps.some(s => s.action.toLowerCase().includes(keyword));
+        return titleMatch || idMatch || stepMatch;
+    });
+
+    document.getElementById('statsInfo').innerHTML = `ค้นพบเควสที่เกี่ยวข้อง ${filtered.length} รายการ`;
+    renderQuests(filtered);
+}
+
+function showQuestDetail(q) {
+    document.getElementById('modalTitle').innerText = `${q.title} (ID: ${q.quest_id})`;
+    
+    let detailedSteps = '';
+    if (q.steps && q.steps.length > 0) {
+        q.steps.forEach(s => {
+            detailedSteps += `📍 ขั้นตอนที่ ${s.step_no}\n- การกระทำ/บทพูด: ${s.action}\n- สถานที่: ${s.map}\n-----------------------------------\n`;
+        });
     } else {
-        bodyEl.innerHTML = rowsHTML;
+        detailedSteps = 'ไม่มีข้อมูลขั้นตอนย่อย';
     }
-}
 
-function filterData() {
-    renderTable();
-}
-
-function showModal(title, dataObj) {
-    document.getElementById('modalTitle').innerText = title;
-    document.getElementById('modalContent').innerText = typeof dataObj === 'object' ? JSON.stringify(dataObj, null, 2) : dataObj;
+    document.getElementById('modalContent').innerText = `เงื่อนไขก่อนหน้า: ${q.prerequisite}\n\nลำดับขั้นตอนการทำเควส:\n${detailedSteps}`;
     document.getElementById('detailModal').style.display = 'flex';
 }
 
