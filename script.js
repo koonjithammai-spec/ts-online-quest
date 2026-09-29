@@ -1,95 +1,108 @@
-let questsData = [];
+let allQuests = [];
+let currentFilter = 'all';
 
-// โหลดไฟล์ quests.json ที่คอมไพล์มาแล้ว
 fetch('quests.json')
     .then(res => res.json())
     .then(data => {
-        questsData = data;
-        document.getElementById('statsInfoinnerText') || (document.getElementById('statsInfo').innerHTML = `โหลดข้อมูลเควสสำเร็จทั้งหมด ${questsData.length} รายการ`);
-        renderQuests(questsData);
+        allQuests = data;
+        updateStats(allQuests.length);
+        renderTable(allQuests);
     })
     .catch(err => {
-        console.error("โหลดไฟล์ quests.json ไม่สำเร็จ:", err);
-        document.getElementById('statsInfo').innerHTML = 'ไม่พบไฟล์ quests.json กรุณารัน compiler.py ก่อน';
+        document.getElementById('statsInfo').innerHTML = '⚠️ ยังไม่พบไฟล์ quests.json กรุณารัน python compiler.py ก่อนครับ';
     });
 
-function renderQuests(data) {
-    let container = document.getElementById('questList');
-    container.innerHTML = '';
+function renderTable(data) {
+    let tbody = document.getElementById('questTableBody');
+    tbody.innerHTML = '';
 
     if (data.length === 0) {
-        container.innerHTML = '<div class="no-result">ไม่พบเควสที่คุณค้นหา</div>';
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 40px; color: #64748b;">ไม่พบข้อมูลเควสที่คุณต้องการ</td></tr>`;
         return;
     }
 
     let html = '';
-    // แสดงผลทีละ 50 รายการแรกก่อนเพื่อความลื่นไหล
-    data.slice(0, 50).forEach(q => {
-        let stepsHtml = '';
-        if (q.steps && q.steps.length > 0) {
-            q.steps.forEach(s => {
-                stepsHtml += `<li class="quest-step-item"><b>ขั้นที่ ${s.step_no}:</b> ${s.action}</li>`;
-            });
-        }
+    data.slice(0, 100).forEach(q => {
+        // หาตัวอย่างสเต็ปแรกมาแสดงย่อ
+        let firstStep = q.steps && q.steps.length > 0 ? q.steps[0].action : 'ไม่มีรายละเอียด';
+        let hasFight = q.steps.some(s => s.type && s.type.includes('ต่อสู้'));
+        let statusBadge = hasFight ? `<span class="badge-fight">⚔️ มีต่อสู้ (Boss)</span>` : `<span class="badge-status">✔ เควสทั่วไป</span>`;
 
         html += `
-            <div class="quest-card" onclick='showQuestDetail(${JSON.stringify(q).replace(/'/g, "&#39;")})'>
-                <div class="quest-card-header">
-                    <span class="badge-quest-id">ID: ${q.quest_id}</span>
-                    <h3>${q.title}</h3>
-                </div>
-                <div class="quest-card-body">
-                    <p><b>เงื่อนไข:</b> ${q.prerequisite}</p>
-                    <ul class="quest-steps-preview">
-                        ${stepsHtml}
-                    </ul>
-                </div>
-            </div>
+            <tr onclick='openQuestModal(${JSON.stringify(q).replace(/'/g, "&#39;")})'>
+                <td><span class="badge-id">#${q.quest_id}</span></td>
+                <td><b>${q.title}</b></td>
+                <td><span style="color: #94a3b8;">📍 แผนที่: ${q.steps[0]?.map || 'ทั่วไป'}</span><br>${firstStep.substring(0, 60)}...</td>
+                <td>${statusBadge}</td>
+            </tr>
         `;
     });
 
-    container.innerHTML = html;
+    tbody.innerHTML = html;
+}
+
+function filterCategory(type, event) {
+    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+    if(event) event.target.classList.add('active');
+    currentFilter = type;
+
+    if (type === 'fight') {
+        let filtered = allQuests.filter(q => q.steps.some(s => s.type && s.type.includes('ต่อสู้')));
+        updateStats(filtered.length);
+        renderTable(filtered);
+    } else {
+        updateStats(allQuests.length);
+        renderTable(allQuests);
+    }
 }
 
 function searchQuests() {
     let keyword = document.getElementById('searchInput').value.trim().toLowerCase();
-    if (keyword === '') {
-        renderQuests(questsData);
-        return;
-    }
+    let baseData = currentFilter === 'fight' ? allQuests.filter(q => q.steps.some(s => s.type && s.type.includes('ต่อสู้'))) : allQuests;
 
-    let filtered = questsData.filter(q => {
-        let titleMatch = q.title.toLowerCase().includes(keyword);
-        let idMatch = String(q.quest_id).includes(keyword);
-        let stepMatch = q.steps.some(s => s.action.toLowerCase().includes(keyword));
-        return titleMatch || idMatch || stepMatch;
+    let filtered = baseData.filter(q => {
+        let matchTitle = q.title.toLowerCase().includes(keyword);
+        let matchId = String(q.quest_id).includes(keyword);
+        let matchStep = q.steps.some(s => s.action.toLowerCase().includes(keyword) || s.map.toLowerCase().includes(keyword));
+        return matchTitle || matchId || matchStep;
     });
 
-    document.getElementById('statsInfo').innerHTML = `ค้นพบเควสที่เกี่ยวข้อง ${filtered.length} รายการ`;
-    renderQuests(filtered);
+    updateStats(filtered.length);
+    renderTable(filtered);
 }
 
-function showQuestDetail(q) {
-    document.getElementById('modalTitle').innerText = `${q.title} (ID: ${q.quest_id})`;
+function updateStats(count) {
+    document.getElementById('statsInfo').innerHTML = `📊 แสดงผลข้อมูลเควสทั้งหมด <b>${count}</b> รายการ (ระบบค้นหาเรียลไทม์)`;
+}
+
+function openQuestModal(q) {
+    document.getElementById('modalQuestTitle').innerText = `${q.title} (ID: ${q.quest_id})`;
     
-    let detailedSteps = '';
+    let stepsHtml = `<div style="margin-bottom: 15px; color: #38bdf8; font-size: 0.9rem;"><b>📌 เงื่อนไขเริ่มต้น:</b> ${q.prerequisite}</div>`;
+    
     if (q.steps && q.steps.length > 0) {
         q.steps.forEach(s => {
-            detailedSteps += `📍 ขั้นตอนที่ ${s.step_no}\n- การกระทำ/บทพูด: ${s.action}\n- สถานที่: ${s.map}\n-----------------------------------\n`;
+            stepsHtml += `
+                <div class="step-box">
+                    <h4>ขั้นตอนที่ ${s.step_no} [ ${s.type} ]</h4>
+                    <p style="margin-bottom: 6px;">💬 <b>เนื้อหา/บทพูด:</b> ${s.action}</p>
+                    <p style="font-size: 0.85rem; color: #38bdf8;">🗺️ <b>พิกัดแผนที่:</b> ${s.map}</p>
+                </div>
+            `;
         });
     } else {
-        detailedSteps = 'ไม่มีข้อมูลขั้นตอนย่อย';
+        stepsHtml += `<p>ไม่มีขั้นตอนย่อยระบุไว้</p>`;
     }
 
-    document.getElementById('modalContent').innerText = `เงื่อนไขก่อนหน้า: ${q.prerequisite}\n\nลำดับขั้นตอนการทำเควส:\n${detailedSteps}`;
-    document.getElementById('detailModal').style.display = 'flex';
+    document.getElementById('modalQuestBody').innerHTML = stepsHtml;
+    document.getElementById('questModal').style.display = 'flex';
 }
 
 function closeModal() {
-    document.getElementById('detailModal').style.display = 'none';
+    document.getElementById('questModal').style.display = 'none';
 }
 
 window.onclick = function(event) {
-    let modal = document.getElementById('detailModal');
+    let modal = document.getElementById('questModal');
     if (event.target == modal) modal.style.display = 'none';
 }
